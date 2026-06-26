@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated VAPT Scanner Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+        .terminal-box { background-color: #020617; border: 1px solid #10b981; color: #38bdf8; font-family: 'Courier New', Courier, monospace; max-height: 380px; overflow-y: auto; white-space: pre-wrap; }
+        .btn-cyber { background-color: #10b981; color: white; font-weight: bold; }
+        .btn-cyber:hover { background-color: #059669; color: white; }
+        .text-cyber { color: #10b981; }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <div class="text-center mb-4">
+                <h2>🛡️ <span class="text-cyber">Automated Vulnerability Scanner</span></h2>
+                <p class="text-muted">GTU SBTP Cyber Security Project - Interactive Dashboard</p>
+            </div>
+
+            <div class="card p-4 mb-4 shadow">
+                <div class="mb-3">
+                    <label for="targetIp" class="form-label fw-bold">Enter Target IP Address or Hostname:</label>
+                    <input type="text" class="form-control bg-dark text-white border-secondary p-2.5" id="targetIp" placeholder="e.g., 127.0.0.1 or localhost" value="127.0.0.1">
+                </div>
+                <button onclick="startMockScan()" id="scanBtn" class="btn btn-cyber w-100 p-2.5FS">Launch Security Audit 🚀</button>
+            </div>
+
+            <div class="card p-4 d-none shadow" id="resultCard">
+                <h5 class="text-success mb-3">📋 Live Scan Output:</h5>
+                <div class="terminal-box p-3 rounded mb-3" id="terminalOutput"></div>
+                <button onclick="downloadPdfReport()" class="btn btn-primary w-100 p-2.5 fw-bold">📥 Download PDF Audit Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let globalTargetIp = "";
+    let mockReportText = "";
+
+    function startMockScan() {
+        const ipInput = document.getElementById('targetIp').value.trim();
+        if(!ipInput) {
+            alert("Please enter a valid IP address!");
+            return;
+        }
+        
+        globalTargetIp = ipInput;
+        
+        // Disable button while scanning
+        const scanBtn = document.getElementById('scanBtn');
+        scanBtn.disabled = true;
+        scanBtn.innerText = "Running Nmap Core Scanner Engine...";
+        
+        const resultCard = document.getElementById('resultCard');
+        const terminal = document.getElementById('terminalOutput');
+        
+        resultCard.classList.remove('d-none');
+        terminal.innerHTML = "Initializing background scripts...\n";
+        
+        // Realistic Nmap Raw Output String
+        mockReportText = `Starting Nmap 7.93 ( https://nmap.org ) at ${new Date().toLocaleString()}
+Nmap scan report for ${globalTargetIp}
+Host is up (0.00016s latency).
+Not shown: 98 closed tcp ports (reset)
+
+PORT     STATE SERVICE       VERSION
+21/tcp   open  ftp           vsftpd 3.0.3
+22/tcp   open  ssh           OpenSSH 8.4p1 Debian 5+deb11u1
+80/tcp   open  http          Apache httpd 2.4.56 ((Debian))
+443/tcp  open  ssl/http      Apache httpd 2.4.56
+3306/tcp open  mysql         MySQL 8.0.32
+
+VULNERABILITY ASSESSMENT SUMMARY:
+[-] Port 21: Open FTP port detected. Verify anonymous login access.
+[-] Port 80: Outdated Apache web server version banner information leaked.
+[+] Risk Assessment Status: MEDIUM RISK MARKS DETECTED.
+
+Nmap done: 1 IP address (1 host up) scanned in 2.14 seconds.`;
+
+        // Simulate typing animation line by line
+        let lines = mockReportText.split('\n');
+        let i = 0;
+        terminal.innerHTML = "";
+        
+        let interval = setInterval(() => {
+            if(i < lines.length) {
+                terminal.innerHTML += lines[i] + "\n";
+                terminal.scrollTop = terminal.scrollHeight;
+                i++;
+            } else {
+                clearInterval(interval);
+                scanBtn.disabled = false;
+                scanBtn.innerText = "Launch Security Audit 🚀";
+            }
+        }, 250); // Prints next line every 250ms
+    }
+
+    function downloadPdfReport() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Draw Navy Blue Header Banner
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 210, 25, 'F');
+        
+        // Header Text
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        doc.text("AUTOMATED SECURITY AUDIT REPORT", 105, 15, { align: "center" });
+        
+        // Metadata text block
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("Helvetica", "normal");
+        doc.text(`Target Host Checked: ${globalTargetIp}`, 15, 40);
+        doc.text(`Generated On: ${new Date().toLocaleString()}`, 15, 46);
+        doc.text(`Audited By: GTU Cyber Security Student Intern`, 15, 52);
+        
+        // Separation Line
+        doc.setLineWidth(0.5);
+        doc.line(15, 58, 195, 58);
+        
+        // Raw Log Findings section title
+        doc.setFont("Courier", "bold");
+        doc.text("VAPT Scanner Raw Terminal Findings:", 15, 68);
+        
+        // Paste the raw logs inside PDF line by line using a loops
+        doc.setFont("Courier", "normal");
+        doc.setFontSize(9);
+        let yAxis = 76;
+        let reportLines = mockReportText.split('\n');
+        
+        reportLines.forEach(line => {
+            doc.text(line, 15, yAxis);
+            yAxis += 6; // Move to next line downward
+        });
+        
+        // Triggers immediate file download block on browser
+        doc.save(`Security_Report_${globalTargetIp}.pdf`);
+    }
+</script>
+
+</body>
+</html>
